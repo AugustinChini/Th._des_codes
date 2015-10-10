@@ -181,11 +181,58 @@ void DeleteMemory(vector<Symbol*>& alphabet, Symbol* root)
 double huffmanLength(vector<Symbol*>& alphabet)
 {
 	unsigned int length = 0;
-	for (int i = 0; i < alphabet.size(); ++i)
+	for (size_t i = 0; i < alphabet.size(); ++i)
 	{
 		length += alphabet[i]->code.length();
 	}
 	return length / alphabet.size();
+}
+ostream& huffmanCompressRatio(ostream & os, char * file, vector<Symbol*>& alphabet)
+{
+	os << "Calcule du taux de compression ... " << endl;
+	ifstream fichier(file, ios::in);
+	long pos = fichier.tellg();
+	fichier.seekg(0, std::ios_base::end);
+	long size = fichier.tellg();
+	fichier.seekg(pos, std::ios_base::beg);
+	
+	os << "Taille du fichier ASCII : " << size << " octets" <<  endl;
+
+	os << "Calcule de taux de compression Huffman pour : " << file << endl;
+
+	//retour au début du fichier
+	fichier.clear();
+	fichier.seekg(0, ios::beg);
+
+	unsigned int bitLength = 0;
+
+	//si ouverture possible
+	if (fichier)
+	{
+		string lettre;
+		char tmpChar;
+		while (fichier.get(tmpChar))
+		{
+			lettre = "";
+			lettre += tmpChar;
+			Symbol * currentSymbol = find(alphabet, lettre);
+			bitLength += currentSymbol->code.length();
+		}
+	}
+
+	bitLength /= 8;
+
+	/*ajout du dictionnaire où les lettres sont codés en ASCII
+	/ donc x lettres en ASCII (8bits)
+	/ et x fois la taille moyenne du codage Huffman courrant
+	*/
+	bitLength = bitLength + alphabet.size() + alphabet.size() * huffmanLength(alphabet);
+
+	os << "Taille du codage Huffman : " << bitLength << " octets" << endl;
+
+	os << "Ratio : " << bitLength << "/" << size << endl;
+
+	return os;
 }
 
 int main(int argc, char * argv[])
@@ -212,7 +259,7 @@ int main(int argc, char * argv[])
 			}
 
 			cout << "--------------------------------" << endl;
-			cout << "Taille moyenne : " << huffmanLength(alphabet) << "Bits" << endl;
+			cout << "Taille moyenne : " << huffmanLength(alphabet) << " Bits" << endl;
 			cout << "--------------------------------" << endl;
 
 			// Clear the memory
@@ -238,8 +285,10 @@ int main(int argc, char * argv[])
 				}
 
 				cout << "--------------------------------" << endl;
-				cout << "Taille moyenne : " << huffmanLength(alphabet) << "Bits" << endl;
+				cout << "Taille moyenne : " << huffmanLength(alphabet) << " Bits" << endl;
 				cout << "--------------------------------" << endl;
+
+				huffmanCompressRatio(cout, argv[2], alphabet);
 
 				// Clear the memory
 				DeleteMemory(alphabet, root);
