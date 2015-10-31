@@ -46,20 +46,20 @@ void computeBlockDCT(vector< CImg<double> >& bloc_image,vector< CImg<double> >& 
 }
 
 
-void computeBlockDCTinv(vector< CImg<double> >& bloc_image_comp,vector< CImg<double> >& bloc_image_quantization, size_t index )
+void computeBlockDCTinv(vector< CImg<double> >& bloc_image_comp,vector< CImg<double> >& bloc_image_dct, size_t index )
 {
 
-    for(int i = 0; i < 8; ++i ) 
+    for(int x = 0; x < 8; ++x ) 
     {
-        for(int j = 0; j < 8; ++j)
+        for(int y = 0; y < 8; ++y)
         {
             double somme2 = 0.0;
-            for(int x = 0; x < 8; ++x)
+            for(int i = 0; i < 8; ++i)
             {
                 double somme1 = 0.0;
-                for(int y = 0; y < 8; ++y)
+                for(int j = 0; j < 8; ++j)
                 {
-                     somme1 += DCTCoefficient(i) * DCTCoefficient(j)*(bloc_image_quantization[index](x, y)) * cos( ((2 * x + 1) * i * M_PI) / 16.0 ) * cos( ((2 * y + 1) * j * M_PI) / 16.0 );
+                     somme1 += DCTCoefficient(i) * DCTCoefficient(j)*(bloc_image_dct[index](i, j)) * cos( ((2 * x + 1) * i * M_PI) / 16.0 ) * cos( ((2 * y + 1) * j * M_PI) / 16.0 );
                 }
                 
                 somme2 += somme1;
@@ -67,7 +67,7 @@ void computeBlockDCTinv(vector< CImg<double> >& bloc_image_comp,vector< CImg<dou
             
             double dctInv = (2.0 / 8.0)  * somme2;
             
-            bloc_image_comp[index](i, j) = dctInv;
+            bloc_image_comp[index](x, y) = dctInv;
         }
     }
 
@@ -83,10 +83,10 @@ void computeBlockDCTinv(vector< CImg<double> >& bloc_image_comp,vector< CImg<dou
 CImg<unsigned char> JPEGEncoder(CImg<unsigned char>& image, float quality)
 {
     
-    quality = 10.0;
-    
     CImg<double> comp(image.width(), image.height(), 1 ,1 ,0);
-    
+    comp = image;
+
+    // Decoupage en bloc de l'image
     vector< CImg<double> > bloc_image;
     
     for(int x = 0; x < comp.width(); x += 8)
@@ -98,6 +98,7 @@ CImg<unsigned char> JPEGEncoder(CImg<unsigned char>& image, float quality)
         }
     }
     
+    // Application de la DCT sur l'image decoupee
     vector< CImg<double> > bloc_image_dct(bloc_image);
     
     for( size_t index = 0; index < bloc_image_dct.size(); ++index )
@@ -105,7 +106,7 @@ CImg<unsigned char> JPEGEncoder(CImg<unsigned char>& image, float quality)
         computeBlockDCT(bloc_image, bloc_image_dct, index);
     }
     
-    //reconstruction de l'image pour l'affichage
+    // Reconstruction de l'image apres DCT pour l'affichage
     CImg<double> newImage(image.width(), image.height(), 1 ,1 ,0);
     int index = 0;
     
@@ -118,11 +119,11 @@ CImg<unsigned char> JPEGEncoder(CImg<unsigned char>& image, float quality)
         }
     }
     
-        // Display the bmp file
+    // Affichage de l'image apres DCT
     CImgDisplay DCT_disp(newImage,"DCT Image");
     
 
-    //etape de quantification
+    // Etape de quantification
     
     vector< CImg<double> > bloc_image_quantization(bloc_image);
 
@@ -151,7 +152,7 @@ CImg<unsigned char> JPEGEncoder(CImg<unsigned char>& image, float quality)
         }
     }
     
-    //affichage de la DCT apres quantification
+    // Reconstruction de l'image après encodage
     CImg<double> quantImage(image.width(), image.height(), 1 ,1 ,0);
     index = 0;
     
@@ -164,19 +165,49 @@ CImg<unsigned char> JPEGEncoder(CImg<unsigned char>& image, float quality)
         }
     }
     
-        // Display the bmp file
+    // Affichage de l'image apres encodage
     CImgDisplay quant_disp(quantImage,"quant DCT Image");
+
+    // Quantification inverse
+    vector< CImg<double> > bloc_image_invQuant(bloc_image);
+    for( size_t index = 0; index < bloc_image_quantization.size(); ++index )
+    {
+        bloc_image_invQuant[index] = bloc_image_quantization[index].get_mul(Q);
+        for(int x = 0; x<8; ++x)
+        {
+            for(int y = 0; y<8; ++y)
+            {
+                bloc_image_invQuant[index](x,y) = ROUND(bloc_image_invQuant[index](x,y));
+            }
+        }
+    }
+
+    CImg<double> quantInvImage(image.width(), image.height(), 1 ,1 ,0);
+    index = 0;
     
-    //Etape de DCT inverse
+    for(int x = 0; x < comp.width(); x += 8)
+    {
+        for(int y = 0; y < comp.height(); y += 8)
+        {
+            quantInvImage.draw_image(x, y, bloc_image_invQuant[index]);
+            ++index;
+        }
+    }
+
+    // Affichage de l'image apres quantification inverse
+    CImgDisplay quantInv_disp(quantInvImage,"quant inv Image");
+    
+
+    // Etape de DCT inverse
     
     vector< CImg<double> > bloc_image_comp(bloc_image);
     
-    for( size_t index = 0; index < bloc_image_dct.size(); ++index )
+    for( size_t index = 0; index < bloc_image_invQuant.size(); ++index )
     {
-        computeBlockDCTinv(bloc_image_comp,  bloc_image_dct, index);
+        computeBlockDCTinv(bloc_image_comp,  bloc_image_invQuant, index);
     }
     
-        //reconstruction de l'image pour l'affichage
+    // Reconstruction de l'image decodee pour l'affichage
     CImg<double> compImage(image.width(), image.height(), 1 ,1 ,0);
     index = 0;
     
@@ -189,7 +220,7 @@ CImg<unsigned char> JPEGEncoder(CImg<unsigned char>& image, float quality)
         }
     }
 
-    // Display the bmp file
+    // Affichage de l'image decodee
     CImgDisplay main_disp(compImage,"comp Image");
 
     while (!main_disp.is_closed());
@@ -197,7 +228,7 @@ CImg<unsigned char> JPEGEncoder(CImg<unsigned char>& image, float quality)
         main_disp.wait();
     }
     
-    return comp;
+    return compImage;
   }
 
 int main()
