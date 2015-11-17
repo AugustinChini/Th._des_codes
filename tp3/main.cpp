@@ -152,7 +152,7 @@ vector<unsigned int> verificationCode(vector<bitset<HAMMING_7> > &bitsetVector)
 
         bitset<3> bitsetRef(0ul);
 
-        //si le bitSet courrant est diffèrent du bitSet de reference (0 0 0) il y a doonc une erreur
+        //si le bitSet courrant est different du bitSet de reference (0 0 0) il y a donc une erreur
         if(outBuffer != bitsetRef)
         {
             errorVector.push_back((unsigned int)outBuffer.to_ulong());
