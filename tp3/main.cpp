@@ -71,26 +71,26 @@ vector<bitset<HAMMING_7> > HammingEncoding(const vector<bitset<N> > &bitsetVecto
     if(DEBUG_HE)
         std::cout << "----------Encode-------------" << endl;
         
-    for(vector<bitset<N> >::const_iterator i = bitsetVector.begin(); i != bitsetVector.end();++i)
+    for(vector<bitset<N> >::const_iterator i = bitsetVector.begin(); i != bitsetVector.end();++i)	//on parcourt le vecteru de bitset
     {
         // Code to modify (sample)      
         bitset<N> inBuffer = *i;
         bitset<HAMMING_7> outBuffer;
 
-        outBuffer[0] = (inBuffer[0]+inBuffer[1]+inBuffer[3])%2;
-        outBuffer[1] = (inBuffer[0]+inBuffer[2]+inBuffer[3])%2;
-        outBuffer[2] = inBuffer[0];
-        outBuffer[3] = (inBuffer[1]+inBuffer[2]+inBuffer[3])%2;
+        outBuffer[0] = (inBuffer[0]+inBuffer[1]+inBuffer[3])%2;		//on convertit le bitset<4> en bitset<HAMMING_7>  
+        outBuffer[1] = (inBuffer[0]+inBuffer[2]+inBuffer[3])%2;		//pour cela, on recupere les 4 bits de donnees en position 2,4,5 et 6
+        outBuffer[2] = inBuffer[0];									//et on ajoute 3 bits de redondance qui sont calcules en ajoutant les bits de donnees ensemble
+        outBuffer[3] = (inBuffer[1]+inBuffer[2]+inBuffer[3])%2;		//et en converstissant les valeurs obtenues en binaire
         
         outBuffer[4] = inBuffer[1];
         outBuffer[5] = inBuffer[2];
         outBuffer[6] = inBuffer[3];
         
-                string tmp = outBuffer.to_string();
+                string tmp = outBuffer.to_string();					//on convertit le bitset obtenu en string
                 std::reverse(tmp.begin(), tmp.end());
                 
         if(DEBUG_HE)
-            cout << " | " << tmp;
+            cout << " | " << tmp;									//et on l'affiche
         
         encodedBitset.push_back(outBuffer);
     }
@@ -98,7 +98,7 @@ vector<bitset<HAMMING_7> > HammingEncoding(const vector<bitset<N> > &bitsetVecto
     if(DEBUG_HE)
         cout << endl;
     
-    return encodedBitset;
+    return encodedBitset;											//on retourne le vecteur de bitset<4>
 }
 
 vector<bitset<N> > HammingDecoding(const vector<bitset<HAMMING_7> > &bitsetVector)
@@ -108,20 +108,20 @@ vector<bitset<N> > HammingDecoding(const vector<bitset<HAMMING_7> > &bitsetVecto
     if(DEBUG_HE)
         std::cout << "----------Decode-------------" << endl;
         
-    for(vector<bitset<HAMMING_7> >::const_iterator i = bitsetVector.begin(); i != bitsetVector.end();++i)
+    for(vector<bitset<HAMMING_7> >::const_iterator i = bitsetVector.begin(); i != bitsetVector.end();++i)	//on parcourt le vecteur
     {     
         bitset<HAMMING_7> inBuffer = *i;
         bitset<N> outBuffer;
 
-        outBuffer[0] = inBuffer[2];
-        outBuffer[1] = inBuffer[4];
-        outBuffer[2] = inBuffer[5];
+        outBuffer[0] = inBuffer[2];			//on sait à quelles positions
+        outBuffer[1] = inBuffer[4];			//se trouvent les bits correspondants aux données
+        outBuffer[2] = inBuffer[5];			//on les recupere
         outBuffer[3] = inBuffer[6];
         
-                string tmp = outBuffer.to_string();
+                string tmp = outBuffer.to_string();	//on les convertit en string
                 
         if(DEBUG_HE)
-            cout << " | " << tmp;
+            cout << " | " << tmp;					//et on les affiche
         
         decodedBitset.push_back(outBuffer);
     }
@@ -130,7 +130,7 @@ vector<bitset<N> > HammingDecoding(const vector<bitset<HAMMING_7> > &bitsetVecto
         cout << endl;
                 
         
-    return decodedBitset;
+    return decodedBitset;					//on retourne le vecteur decode
 }
 
 vector<unsigned int> verificationCode(vector<bitset<HAMMING_7> > &bitsetVector)
@@ -146,13 +146,13 @@ vector<unsigned int> verificationCode(vector<bitset<HAMMING_7> > &bitsetVector)
         bitset<HAMMING_7> inBuffer = *it;
         bitset<3> outBuffer;
 
-        outBuffer[0] = (inBuffer[3]+inBuffer[4]+inBuffer[5]+inBuffer[6])%2;
-        outBuffer[1] = (inBuffer[1]+inBuffer[2]+inBuffer[5]+inBuffer[6])%2;
-        outBuffer[2] = (inBuffer[0]+inBuffer[2]+inBuffer[4]+inBuffer[6])%2;
+        outBuffer[0] = (inBuffer[3]+inBuffer[4]+inBuffer[5]+inBuffer[6])%2;	//au lieu de multiplier le bitset par la matrice de verification V
+        outBuffer[1] = (inBuffer[1]+inBuffer[2]+inBuffer[5]+inBuffer[6])%2;	//on simplifie les operations pour avoir seulement des additions et gagner en performances
+        outBuffer[2] = (inBuffer[0]+inBuffer[2]+inBuffer[4]+inBuffer[6])%2;	//     | 0 0 0 1 1 1 1 |
+																			// V = | 0 1 1 0 0 1 1 |
+        bitset<3> bitsetRef(0ul);											//     | 1 0 1 0 1 0 1 |
 
-        bitset<3> bitsetRef(0ul);
-
-        //si le bitSet courrant est different du bitSet de reference (0 0 0) il y a donc une erreur
+        //si le bitSet courant est different du bitSet de reference (0 0 0) il y a donc une erreur
         if(outBuffer != bitsetRef)
         {
             errorVector.push_back((unsigned int)outBuffer.to_ulong());
@@ -210,6 +210,38 @@ void insertError(vector<bitset<HAMMING_7> > &bitsetVector)
 
 }
 
+void HammingDistance(const vector<bitset<HAMMING_7> > &bitsetVector, int posWord1, int posWord2)
+{
+       /* vector<bitset<N> > decodedBitset;
+    
+    if(DEBUG_HE)
+        std::cout << "----------Decode-------------" << endl;
+        
+    for(vector<bitset<HAMMING_7> >::const_iterator i = bitsetVector.begin(); i != bitsetVector.end();++i)	//on parcourt le vecteur
+    {     
+        bitset<HAMMING_7> inBuffer = *i;
+        bitset<N> outBuffer;
+
+        outBuffer[0] = inBuffer[2];			//on sait à quelles positions
+        outBuffer[1] = inBuffer[4];			//se trouvent les bits correspondants aux données
+        outBuffer[2] = inBuffer[5];			//on les recupere
+        outBuffer[3] = inBuffer[6];
+        
+                string tmp = outBuffer.to_string();	//on les convertit en string
+                
+        if(DEBUG_HE)
+            cout << " | " << tmp;					//et on les affiche
+        
+        decodedBitset.push_back(outBuffer);
+    }
+    
+    if(DEBUG_HE)
+        cout << endl;
+                
+        
+    return decodedBitset;					//on retourne le vecteur decode*/
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //                                                     Main                                                       //
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -227,7 +259,12 @@ int main()
 
     //return vector of bitset<4>
     HammingDecoding(encode_data);
+    
+    // calcul de la distance de hamming entre deux mots
+    HammingDistance(encode_data, 0, 1);
+    
 
+	// on insère des erreurs dans les donnees
     insertError(encode_data);
 
     vector<unsigned int> errorVector = verificationCode(encode_data);
