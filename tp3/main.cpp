@@ -272,6 +272,7 @@ int main()
     }
     
     // calcul de la distance de hamming entre deux mots, ici pour le code de Hamming (7,4)
+    
     HammingDistance2Words(encoded_data, 0, 1);
 
 }
