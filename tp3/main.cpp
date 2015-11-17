@@ -212,34 +212,23 @@ void insertError(vector<bitset<HAMMING_7> > &bitsetVector)
 
 void HammingDistance(const vector<bitset<HAMMING_7> > &bitsetVector, int posWord1, int posWord2)
 {
-       /* vector<bitset<N> > decodedBitset;
-    
-    if(DEBUG_HE)
-        std::cout << "----------Decode-------------" << endl;
-        
-    for(vector<bitset<HAMMING_7> >::const_iterator i = bitsetVector.begin(); i != bitsetVector.end();++i)	//on parcourt le vecteur
-    {     
-        bitset<HAMMING_7> inBuffer = *i;
-        bitset<N> outBuffer;
 
-        outBuffer[0] = inBuffer[2];			//on sait à quelles positions
-        outBuffer[1] = inBuffer[4];			//se trouvent les bits correspondants aux données
-        outBuffer[2] = inBuffer[5];			//on les recupere
-        outBuffer[3] = inBuffer[6];
-        
-                string tmp = outBuffer.to_string();	//on les convertit en string
-                
-        if(DEBUG_HE)
-            cout << " | " << tmp;					//et on les affiche
-        
-        decodedBitset.push_back(outBuffer);
-    }
+	bitset<HAMMING_7> word1, word2;
+	int distance = 0;
+	int vectorSize = bitsetVector.size();
+	if(posWord1 < vectorSize && posWord2 < vectorSize){	//on vérifie que les index des mots a comparer sont plus petits que la taille du vecteur
+
+		word1 = bitsetVector[posWord1];					//on récupère les deux mots a comparer
+		word2 = bitsetVector[posWord2];
+		
+		int wordSize = word1.size();
+		for(int i = 0; i < wordSize; i++){				//pour chaque bit des mots
+			if(word1[i] != word2[i]) distance ++;		//on augmente la distance de 1 si les bits sont differents
+		}
+
+	}  
+	cout << "La distance de Hamming entre deux mots est de " << distance << endl;	//on affiche la distance calculee
     
-    if(DEBUG_HE)
-        cout << endl;
-                
-        
-    return decodedBitset;					//on retourne le vecteur decode*/
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -260,9 +249,8 @@ int main()
     //return vector of bitset<4>
     HammingDecoding(encode_data);
     
-    // calcul de la distance de hamming entre deux mots
-    HammingDistance(encode_data, 0, 1);
-    
+    //sauvegarde des donnees encodees par Hamming avant l'injection d'erreur pour calculer la distance plus tard
+    vector< bitset<HAMMING_7> > encoded_data = encode_data;
 
 	// on insère des erreurs dans les donnees
     insertError(encode_data);
@@ -282,5 +270,8 @@ int main()
         cout << ", a la lettre : " << *it << endl;
         ++it;
     }
+    
+    // calcul de la distance de hamming entre deux mots, ici pour le code de Hamming (7,4)
+    HammingDistance(encoded_data, 0, 1);
 
 }
