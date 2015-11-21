@@ -105,11 +105,17 @@ vector< bitset<N> >  GSM_transmission(vector< bitset<N> > mess_cod)
 	return mess_tra;
 }
 
-struct code_container
+class code_stat
 {
-	bitset<R + 1> registre;
-	vector< bitset<K> > code;
-	unsigned int err;
+	public :
+		bitset<R + 1> registre;
+		vector< bitset<K> > code;
+		unsigned int err;
+
+		inline bool operator==(bitset<R + 1> &rcs)
+		{
+			return registre == rcs;
+		}
 };
 
 //////////////////////////////////////////////////////////////////
@@ -120,19 +126,66 @@ struct code_container
 
 vector< bitset<K> > GSM_decode(vector< bitset<N> > mess_tra)
 {
-	bitset<N> cod_out;
+
 	bitset<R + 1> G0(25);
 	bitset<R + 1> G1(27);
-	bitset<R + 1> reg;
-	reg.reset();
+	bitset<N> cod_out;
+
 
 	vector< bitset<K> > mess_dec;
 
+	vector<code_stat> code_stat_vect;
+
+	//init vect
+	code_stat initStat;
+	initStat.registre.reset();
+	initStat.err = 0;
+
+	code_stat_vect.push_back(initStat);
+
+
 	for (vector<bitset<N> >::iterator mess_it = mess_tra.begin(); mess_it != mess_tra.end(); ++mess_it)
 	{
-		(*mess_it);
-		++mess_it;
-		(*mess_it);
+		cout << (*mess_it) << endl;
+
+		for (vector<code_stat>::iterator struct_it = code_stat_vect.begin(); struct_it != code_stat_vect.end(); ++struct_it)
+		{
+			//duplication instance
+			code_stat tmp0 = *struct_it;
+			code_stat tmp1 = *struct_it;
+
+			//mise a jour des code de registre courrant des struct
+			tmp0.registre = tmp0.registre >> 1;
+			tmp1.registre = tmp1.registre >> 1;
+			tmp1.registre.set(3, true);
+
+			//mise a jour du code courrant (code qui sera peut etre le code du message decode)
+			tmp0.code.push_back(bitset<K>(0));
+			tmp1.code.push_back(bitset<K>(1));
+
+			//calcul de l'erreur courrante
+			//on recalcul le code GSM pour le message courrant que l'on a dans la struct courrante
+			//et on prend le dernier bitset<2> qui contient la réponse de l'automate a un 0 ou un 1
+			//dans l'etat courrant contenu dans le registre
+			encodage(tmp0.registre, G0, G1, cod_out);
+			int dist = hamming_dist(cod_out, *mess_it);
+			tmp0.err += dist;
+
+			dist = 0;
+
+			encodage(tmp1.registre, G0, G1, cod_out);
+			dist = hamming_dist(cod_out, *mess_it);
+			tmp1.err += dist;
+
+			//une fois que les struct sont mises a jours elles sont ajoutees au
+			//vect qui contient toute les instances en cours
+			*struct_it = tmp0;
+			code_stat_vect.push_back(tmp1);
+
+			suppr_double(code_stat_vect);
+
+		}
+
 	}
 
 	/////////// TO DELETE AND MODIFY ///////////
@@ -142,6 +195,40 @@ vector< bitset<K> > GSM_decode(vector< bitset<N> > mess_tra)
 
 	return mess_dec;
 }
+
+
+
+void suppr_double(vector<code_stat> &vect)
+{
+	for (vector<code_stat>::iterator it = vect.begin(); it != vect.end(); ++it)
+	{
+		vector<code_stat>::iterator f_it = find(vect.begin(), vect.end(), (*it).registre);
+
+		if (it != vect.end())
+			std::cout << "Element found in myvector:\n";
+		else
+			std::cout << "Element not found in myvector\n";
+	}
+}
+
+
+
+int hamming_dist(bitset<N> cod_out, bitset<N> mess)
+{
+	int distance = 0;
+
+	int cod_size = cod_out.size();
+	//pour chaque bit des mots 
+	for (int i = 0; i < cod_size; i++) {
+
+		//on augmente la distance de 1 si les bits sont differents 
+		if (cod_out[i] != mess[i]) distance++;
+
+	}
+}
+
+
+
 
 //////////////////////////////////////////////////////////////////
 //                             MAIN                             //
