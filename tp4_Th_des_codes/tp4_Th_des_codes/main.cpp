@@ -60,10 +60,10 @@ vector< bitset<N> > GSM_code(vector< bitset<K> > mess)
 	reg.reset();
 
 #ifdef DEBUG
-	cout << "-------------------- Debug Informations (Coding) --------------------" << endl << endl;
-	cout << "Initial register ( u(i-4)  u(i-3)  u(i-2)  u(i-1)  u(i)  ): " << reg << endl;
-	cout << "Polynom G0       ( g0(i-4) g0(i-3) g0(i-2) g0(i-1) g0(i) ): " << G0 << endl;
-	cout << "Polynom G1       ( g1(i-4) g1(i-3) g1(i-2) g1(i-1) g1(i) ): " << G1 << endl << endl;
+	std::cout << "-------------------- Debug Informations (Coding) --------------------" << endl << endl;
+	std::cout << "Initial register ( u(i-4)  u(i-3)  u(i-2)  u(i-1)  u(i)  ): " << reg << endl;
+	std::cout << "Polynom G0       ( g0(i-4) g0(i-3) g0(i-2) g0(i-1) g0(i) ): " << G0 << endl;
+	std::cout << "Polynom G1       ( g1(i-4) g1(i-3) g1(i-2) g1(i-1) g1(i) ): " << G1 << endl << endl;
 #endif
 
 	for (vector<bitset<K> >::iterator it = mess.begin(); it != mess.end(); ++it)
@@ -78,13 +78,13 @@ vector< bitset<N> > GSM_code(vector< bitset<K> > mess)
 		mess_out.push_back(cod_out);
 
 #ifdef DEBUG
-		cout << "Block number: " << ++i << " - In frame: " << *it << endl;
-		cout << "\t Current status of registers: " << reg << endl;
-		cout << "\t Out : " << cod_out << endl;
+		std::cout << "Block number: " << ++i << " - In frame: " << *it << endl;
+		std::cout << "\t Current status of registers: " << reg << endl;
+		std::cout << "\t Out : " << cod_out << endl;
 #endif
 	}
 #ifdef DEBUG
-	cout << "------------------------------------------------------------------" << endl << endl;
+	std::cout << "------------------------------------------------------------------" << endl << endl;
 #endif
 
 	return mess_out;
@@ -118,6 +118,58 @@ class code_stat
 		}
 };
 
+
+
+void suppr_double(vector<code_stat> &vect)
+{
+
+	vector<code_stat>::iterator f_it = vect.begin();
+
+	for (vector<code_stat>::iterator it = vect.begin(); it != vect.end(); ++it)
+	{
+
+		for (; f_it != vect.end(); ++f_it)
+		{
+			if(f_it != it && (*f_it).registre == (*it).registre)
+			{
+				break;
+			}
+		}
+
+		if (f_it != vect.end())
+		{
+			if ((*f_it).err > (*it).err)
+			{
+				f_it = vect.erase(f_it);
+			}
+			else
+			{
+				f_it = vect.erase(it);
+			}
+		}
+	}
+}
+
+
+
+int hamming_dist(bitset<N> cod_out, bitset<N> mess)
+{
+	int distance = 0;
+
+	int cod_size = cod_out.size();
+	//pour chaque bit des mots 
+	for (int i = 0; i < cod_size; i++) {
+
+		//on augmente la distance de 1 si les bits sont differents 
+		if (cod_out[i] != mess[i]) distance++;
+
+	}
+
+	return distance;
+}
+
+
+
 //////////////////////////////////////////////////////////////////
 // vector< bitset<K> > GSM_decode(vector< bitset<N> > mess_tra) //
 //                                                              //
@@ -146,9 +198,11 @@ vector< bitset<K> > GSM_decode(vector< bitset<N> > mess_tra)
 
 	for (vector<bitset<N> >::iterator mess_it = mess_tra.begin(); mess_it != mess_tra.end(); ++mess_it)
 	{
-		cout << (*mess_it) << endl;
+		std::cout << (*mess_it) << endl;
 
-		for (vector<code_stat>::iterator struct_it = code_stat_vect.begin(); struct_it != code_stat_vect.end(); ++struct_it)
+		vector<code_stat>::iterator struct_it = code_stat_vect.begin();
+
+		for (; struct_it != code_stat_vect.end(); ++struct_it)
 		{
 			//duplication instance
 			code_stat tmp0 = *struct_it;
@@ -188,44 +242,11 @@ vector< bitset<K> > GSM_decode(vector< bitset<N> > mess_tra)
 
 	}
 
-	/////////// TO DELETE AND MODIFY ///////////
-	for (unsigned int i = 0; i<mess_tra.size(); ++i)
-		mess_dec.push_back(randBitset<K>());
-	////////////////////////////////////////////
+	std::cout << "fini ravioli : " << code_stat_vect.size() << endl;
 
 	return mess_dec;
 }
 
-
-
-void suppr_double(vector<code_stat> &vect)
-{
-	for (vector<code_stat>::iterator it = vect.begin(); it != vect.end(); ++it)
-	{
-		vector<code_stat>::iterator f_it = find(vect.begin(), vect.end(), (*it).registre);
-
-		if (it != vect.end())
-			std::cout << "Element found in myvector:\n";
-		else
-			std::cout << "Element not found in myvector\n";
-	}
-}
-
-
-
-int hamming_dist(bitset<N> cod_out, bitset<N> mess)
-{
-	int distance = 0;
-
-	int cod_size = cod_out.size();
-	//pour chaque bit des mots 
-	for (int i = 0; i < cod_size; i++) {
-
-		//on augmente la distance de 1 si les bits sont differents 
-		if (cod_out[i] != mess[i]) distance++;
-
-	}
-}
 
 
 
@@ -259,25 +280,25 @@ int main()
 	// Decoding of the transmitted message => mess_dec
 	mess_dec = GSM_decode(mess_tra);
 
-	cout << "Source Message   : ";
+	std::cout << "Source Message   : ";
 	for (vector<bitset<K> >::iterator it = mess.begin(); it != mess.end(); ++it)
-		cout << ' ' << *it;
-	cout << '\n';
+		std::cout << ' ' << *it;
+	std::cout << '\n';
 
-	cout << "Coded Message    : ";
+	std::cout << "Coded Message    : ";
 	for (vector<bitset<N> >::iterator it = mess_cod.begin(); it != mess_cod.end(); ++it)
-		cout << ' ' << *it;
-	cout << '\n';
+		std::cout << ' ' << *it;
+	std::cout << '\n';
 
-	cout << "Received Message : ";
+	std::cout << "Received Message : ";
 	for (vector<bitset<N> >::iterator it = mess_tra.begin(); it != mess_tra.end(); ++it)
-		cout << ' ' << *it;
-	cout << '\n';
+		std::cout << ' ' << *it;
+	std::cout << '\n';
 
-	cout << "Decoded Message  : ";
+	std::cout << "Decoded Message  : ";
 	for (vector<bitset<K> >::iterator it = mess_dec.begin(); it != mess_dec.end(); ++it)
-		cout << ' ' << *it;
-	cout << '\n';
+		std::cout << ' ' << *it;
+	std::cout << '\n';
 
 	system("pause");
 
