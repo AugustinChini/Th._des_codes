@@ -187,6 +187,7 @@ vector< bitset<K> > GSM_decode(vector< bitset<N> > mess_tra)
 	vector< bitset<K> > mess_dec;
 
 	vector<code_stat> code_stat_vect;
+	vector<code_stat> tmp_vect;
 
 	//init vect
 	code_stat initStat;
@@ -200,18 +201,25 @@ vector< bitset<K> > GSM_decode(vector< bitset<N> > mess_tra)
 	{
 		std::cout << (*mess_it) << endl;
 
-		vector<code_stat>::iterator struct_it = code_stat_vect.begin();
 
-		for (; struct_it != code_stat_vect.end(); ++struct_it)
+		tmp_vect = code_stat_vect;	//on utilise un vecteur temporaire pour travailler
+		code_stat_vect.clear();
+		
+		vector<code_stat>::iterator struct_it = tmp_vect.begin();
+		
+		for (; struct_it != tmp_vect.end(); ++struct_it)
 		{
+			//cout<<code_stat_vect.size()<<endl;
+
 			//duplication instance
 			code_stat tmp0 = *struct_it;
 			code_stat tmp1 = *struct_it;
 
 			//mise a jour des code de registre courrant des struct
-			tmp0.registre = tmp0.registre >> 1;
-			tmp1.registre = tmp1.registre >> 1;
-			tmp1.registre.set(3, true);
+			tmp0.registre = tmp0.registre << 1;
+			tmp1.registre = tmp1.registre << 1;
+			tmp1.registre.set(0, true);
+			tmp0.registre.set(0, false);
 
 			//mise a jour du code courrant (code qui sera peut etre le code du message decode)
 			tmp0.code.push_back(bitset<K>(0));
@@ -233,14 +241,16 @@ vector< bitset<K> > GSM_decode(vector< bitset<N> > mess_tra)
 
 			//une fois que les struct sont mises a jours elles sont ajoutees au
 			//vect qui contient toute les instances en cours
-			*struct_it = tmp0;
+			code_stat_vect.push_back(tmp0);
 			code_stat_vect.push_back(tmp1);
 
 			suppr_double(code_stat_vect);
 
+			//std::cout << "fini for : " << code_stat_vect.size() << endl;
 		}
 
 	}
+	 
 
 	std::cout << "fini ravioli : " << code_stat_vect.size() << endl;
 
@@ -300,7 +310,7 @@ int main()
 		std::cout << ' ' << *it;
 	std::cout << '\n';
 
-	system("pause");
+	//system("pause");
 
 	return 0;
 }
