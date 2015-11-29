@@ -101,6 +101,13 @@ vector< bitset<N> >  GSM_transmission(vector< bitset<N> > mess_cod)
 	vector< bitset<N> > mess_tra = mess_cod;
 
 	//TODO: Code here
+	
+    for(int i = 0; i < 4; ++i)
+    {
+        int idxError = rand() % mess_cod.size();	//on choisi un index au hasard dans le message
+        mess_tra[idxError] = randBitset<N>();		//et on ajoute un bitset<N> généré aleatoirement a l'index choisi
+        cout << "Error index: " << idxError << endl;	//on affiche à l'utilisateur quel index a été choisi pour inserer l'erreur
+    }   
 
 	return mess_tra;
 }
@@ -199,7 +206,7 @@ vector< bitset<K> > GSM_decode(vector< bitset<N> > mess_tra)
 
 	for (vector<bitset<N> >::iterator mess_it = mess_tra.begin(); mess_it != mess_tra.end(); ++mess_it)
 	{
-		std::cout << (*mess_it) << endl;
+		//std::cout << (*mess_it) << endl;
 
 
 		tmp_vect = code_stat_vect;	//on utilise un vecteur temporaire pour travailler
@@ -225,34 +232,56 @@ vector< bitset<K> > GSM_decode(vector< bitset<N> > mess_tra)
 			tmp0.code.push_back(bitset<K>(0));
 			tmp1.code.push_back(bitset<K>(1));
 
-			//calcul de l'erreur courrante
-			//on recalcul le code GSM pour le message courrant que l'on a dans la struct courrante
+			//calcul de l'erreur courante
+			//on recalcule le code GSM pour le message courant que l'on a dans la struct courante
 			//et on prend le dernier bitset<2> qui contient la réponse de l'automate a un 0 ou un 1
-			//dans l'etat courrant contenu dans le registre
+			//dans l'etat courant contenu dans le registre
 			encodage(tmp0.registre, G0, G1, cod_out);
 			int dist = hamming_dist(cod_out, *mess_it);
 			tmp0.err += dist;
 
 			dist = 0;
-
+			
 			encodage(tmp1.registre, G0, G1, cod_out);
 			dist = hamming_dist(cod_out, *mess_it);
 			tmp1.err += dist;
 
-			//une fois que les struct sont mises a jours elles sont ajoutees au
+			//une fois que les struct sont mises a jour elles sont ajoutees au
 			//vect qui contient toute les instances en cours
 			code_stat_vect.push_back(tmp0);
 			code_stat_vect.push_back(tmp1);
 
+			//std::cout << "avant suppr double : " << code_stat_vect.size() << endl;
+			
 			suppr_double(code_stat_vect);
 
-			//std::cout << "fini for : " << code_stat_vect.size() << endl;
+			//std::cout << "apres suppr double : " << code_stat_vect.size() << endl;
 		}
 
 	}
-	 
+	
+	
+	if( code_stat_vect.size() > 0 )
+    {
+        code_stat minPath = code_stat_vect[0];
+        unsigned int min = code_stat_vect[0].err;
+         
+        for (vector<code_stat>::iterator it = code_stat_vect.begin(); it != code_stat_vect.end(); ++it)
+        {
+            if( (*it).err < min )
+            {
+                min = (*it).err;
+                minPath = (*it);
+            }
+        }
+                 
+        for (vector<bitset<K> >::iterator it = minPath.code.begin(); it != minPath.code.end(); ++it)
+        {
+            mess_dec.push_back((*it));
+        }       
+    }
 
-	std::cout << "fini ravioli : " << code_stat_vect.size() << endl;
+	//std::cout << "fini ravioli : " << code_stat_vect.size() << endl;
 
 	return mess_dec;
 }
