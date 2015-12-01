@@ -112,13 +112,22 @@ vector< bitset<N> >  GSM_transmission(vector< bitset<N> > mess_cod)
 	return mess_tra;
 }
 
+// class contenant toute les informations utiles concernant l'etat courrant a un noeud
+// d'un des chemins qui peut mener au decodage
 class code_stat
 {
 	public :
+	
+	        // registre d'état courrant
 		bitset<R + 1> registre;
+		
+		// code decode (qui peut etre le code final)
 		vector< bitset<K> > code;
+		
+		// erreur cumule au cour du chemin
 		unsigned int err;
 
+                // operateur de comparaison de registre
 		inline bool operator==(bitset<R + 1> &rcs)
 		{
 			return registre == rcs;
@@ -126,15 +135,22 @@ class code_stat
 };
 
 
-
+/*
+ * Cette fonction sert a eliminer les doubles, c'est a dire a un instant t
+ * certaine class code_stat ont le meme registre, elle sont donc sur le meme
+ * noeud il faut donc en supprimer l'une des deux: celle qui a l'erreure 
+ * cumule la moins grande --> mais cette fonction met beaucoupe de temps a l'execution et nous nous interogons sur sont utilite
+*/
 void suppr_double(vector<code_stat> &vect)
 {
 
 	vector<code_stat>::iterator f_it = vect.begin();
-
+        
+        // On parcour le vecteur contenant toute les instances de code_stat pour trouver celle qui ont le meme registre
 	for (vector<code_stat>::iterator it = vect.begin(); it != vect.end(); ++it)
 	{
-
+                
+                // pour chaque vecteur on verifie si les registres sont egaux
 		for (; f_it != vect.end(); ++f_it)
 		{
 			if(f_it != it && (*f_it).registre == (*it).registre)
@@ -143,8 +159,10 @@ void suppr_double(vector<code_stat> &vect)
 			}
 		}
 
+                // si on trouve des vecteur en double
 		if (f_it != vect.end())
 		{
+		        // on choisi quel class supprimer en fonction le l'erreur la plus grande
 			if ((*f_it).err > (*it).err)
 			{
 				f_it = vect.erase(f_it);
@@ -158,7 +176,7 @@ void suppr_double(vector<code_stat> &vect)
 }
 
 
-
+// fonction qui calcule la distance de Hamming entre deux bitset
 int hamming_dist(bitset<N> cod_out, bitset<N> mess)
 {
 	int distance = 0;
@@ -203,7 +221,7 @@ vector< bitset<K> > GSM_decode(vector< bitset<N> > mess_tra)
 
 	code_stat_vect.push_back(initStat);
 
-
+        
 	for (vector<bitset<N> >::iterator mess_it = mess_tra.begin(); mess_it != mess_tra.end(); ++mess_it)
 	{
 		//std::cout << (*mess_it) << endl;
@@ -214,11 +232,12 @@ vector< bitset<K> > GSM_decode(vector< bitset<N> > mess_tra)
 		
 		vector<code_stat>::iterator struct_it = tmp_vect.begin();
 		
+		
 		for (; struct_it != tmp_vect.end(); ++struct_it)
 		{
 			//cout<<code_stat_vect.size()<<endl;
 
-			//duplication instance
+			//duplication instance car a chaque noeud on a deux nouvelle posibilites (0 ou 1)
 			code_stat tmp0 = *struct_it;
 			code_stat tmp1 = *struct_it;
 
@@ -239,9 +258,11 @@ vector< bitset<K> > GSM_decode(vector< bitset<N> > mess_tra)
 			encodage(tmp0.registre, G0, G1, cod_out);
 			int dist = hamming_dist(cod_out, *mess_it);
 			tmp0.err += dist;
-
+                        
 			dist = 0;
 			
+			// on encode ce code courant en fonction de l'etat de registre pour pouvoir avoir la sortie 
+			// de "l'automate" et par la suite pouvoir calculer les erreurs avec la distance de Hamming
 			encodage(tmp1.registre, G0, G1, cod_out);
 			dist = hamming_dist(cod_out, *mess_it);
 			tmp1.err += dist;
@@ -260,28 +281,30 @@ vector< bitset<K> > GSM_decode(vector< bitset<N> > mess_tra)
 
 	}
 	
-	
+	// on va alors recuperer le code decode qui est la class restante dans le vecteur avec la plus petite erreur
 	if( code_stat_vect.size() > 0 )
-    {
-        code_stat minPath = code_stat_vect[0];
-        unsigned int min = code_stat_vect[0].err;
-         
-        for (vector<code_stat>::iterator it = code_stat_vect.begin(); it != code_stat_vect.end(); ++it)
         {
-            if( (*it).err < min )
-            {
-                min = (*it).err;
-                minPath = (*it);
-            }
-        }
+                code_stat minPath = code_stat_vect[0];
+                unsigned int min = code_stat_vect[0].err;
                  
-        for (vector<bitset<K> >::iterator it = minPath.code.begin(); it != minPath.code.end(); ++it)
-        {
-            mess_dec.push_back((*it));
-        }       
-    }
+                // on selectionne la class avec la plus petite erreur
+                for (vector<code_stat>::iterator it = code_stat_vect.begin(); it != code_stat_vect.end(); ++it)
+                {
+                    if( (*it).err < min )
+                    {
+                        min = (*it).err;
+                        minPath = (*it);
+                    }
+                }
+                
+                
+                // on sauvgarde le message decode   
+                for (vector<bitset<K> >::iterator it = minPath.code.begin(); it != minPath.code.end(); ++it)
+                {
+                    mess_dec.push_back((*it));
+                }       
+        }
 
-	//std::cout << "fini ravioli : " << code_stat_vect.size() << endl;
 
 	return mess_dec;
 }
@@ -339,7 +362,6 @@ int main()
 		std::cout << ' ' << *it;
 	std::cout << '\n';
 
-	//system("pause");
 
 	return 0;
 }
