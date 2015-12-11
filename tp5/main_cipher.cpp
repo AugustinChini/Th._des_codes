@@ -96,7 +96,7 @@ public:
 
 int main()
 {
-  Vigenere cipher("MYKEY");
+  Vigenere cipher("COUCOU");
  
   string original_en  = "Kerckhoffs's principle - A cryptosystem should be secure even if everything about the system, except the key, is public knowledge.";
   string encrypted_en = cipher.encrypt(original_en);

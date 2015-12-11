@@ -37,36 +37,62 @@ public:
 	{
 		string res = "";
 		double ICsum = 0;
+		vector<double> vectICAvg;
 
 		// we try to find a key between 2 and 16 char
-		for (unsigned int i = 2; i <= 16; ++i)
+		for (unsigned int i = 1; i <= 10; ++i)
 		{
 			// get the char corresponding to the index
 			// check if the string is shorter than the index
 			if (encrypt.size() >= i)
 			{
+				string tmp = "";
+
 				for (unsigned int k = 0; k < i; ++k)
 				{
-					unsigned int j = 0;
-					string tmp = "";
+					unsigned int j = k;
+					
 					do
 					{
 						tmp += encrypt[j];
 						j += i;
 
 					} while (j + i < encrypt.size());
-					//cout << "String " << k << " " << tmp << endl;
+					
+					
 					ICsum += getIC(tmp);
+					//cout << "String " << i << " " << tmp << endl;
+					tmp = "";
 				}
-
+				
 				cout << "IC average : "<< ICsum / (double)i << " - " << i << endl;
+
+				vectICAvg.push_back( ICsum / (double)i );
 
 				ICsum = 0;
 			}
 		}
 
-		return 0;
+		return findLenght(vectICAvg);
 
+	}
+
+	unsigned int findLenght(vector<double>& v)
+	{
+		unsigned int index = 0;
+		bool find = false;
+
+		for(unsigned int i = 0; i < v.size() && find == false; ++i)
+		{
+			if(0.06 <= v[i])
+			{
+				index = i;
+				find = true;
+			}
+
+		}
+
+		return index+1;
 	}
 
 	double getIC(string s)
@@ -110,8 +136,10 @@ public:
 
 int main()
 {
+	//KDVTDFOEJJLNRHRTBNLDETKWPSSJRQTDQJAMUKHSXQEBYIXCVDRZYCVDVPMFIMKRUMUSXYXQYRXVFCXBIGMRHDOVRGSOYSEGCJRFPJECKV 'AZERTY'
 	//PRINCIPEDEKERCKHOFFSTOUTELASECURITEDUNSYSTEMECRYPTOGRAPHIQUEDOITREPOSERSURLACLEFETPASSURLESYSTEMELUIMEME
-	string input = "BPSRAUNOHCWCBGITMPJQFMEXCXYCIAGPSXCPSXWWEROQCOPITRAEBENTGAYCPMSXPQNYWCDQEVJMAVIDQRZEQESBPCEWCXCYCVYGYCWI";
+	//BPSRAUNOHCWCBGITMPJQFMEXCXYCIAGPSXCPSXWWEROQCOPITRAEBENTGAYCPMSXPQNYWCDQEVJMAVIDQRZEQESBPCEWCXCYCVYGYCWI 'MYKEY'
+	string input = "KDVTDFOEJJLNRHRTBNLDETKWPSSJRQTDQJAMUKHSXQEBYIXCVDRZYCVDVPMFIMKRUMUSXYXQYRXVFCXBIGMRHDOVRGSOYSEGCJRFPJECKV";
 
 	array<double, 26> english = {
 		0.08167, 0.01492, 0.02782, 0.04253, 0.12702, 0.02228,
@@ -129,7 +157,6 @@ int main()
 
 	VigenereCryptanalysis vc_en(english);
 	pair<string, string> output_en = vc_en.analyze(input);
-	vc_en.getIC(input);
 
 	cout << "Key: " << output_en.second << endl;
 	cout << "Text: " << output_en.first << endl;
@@ -140,9 +167,6 @@ int main()
 	cout << "Key: " << output_fr.second << endl;
 	cout << "Text: " << output_fr.first << endl;
 
-	vc_fr.getKeyLength(input);
-
-	system("pause");
+	cout << "------------Key Length----------> " << vc_fr.getKeyLength(input) << endl;
 
 }
-
