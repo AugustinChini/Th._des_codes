@@ -4,6 +4,7 @@
 #include <map>
 #include <algorithm>
 #include <array>
+#include <math.h>
 
 using namespace std;
 
@@ -131,6 +132,74 @@ public:
 
 		return cpt;
 	}
+	
+	
+	void getKey(string s, int keyLength)
+	{
+
+		int size = s.size();
+		
+		for(int i = 0; i < keyLength; i++){
+			
+			string sequence = "";
+			
+			for (int j = i; j < size; j+=keyLength){
+				
+				sequence+= s.at(i);
+				
+			}
+			chiSquarred(sequence); //recuperer la lettre correspondant à cet index, chaque lettre correspond à une lettre de la cle
+		}
+
+	}
+	
+	unsigned int chiSquarred(const string& s)
+	{
+		double chiMin = 0;
+		unsigned int index = 0;
+		
+		int size = s.size();
+		
+		string newString = "";
+		
+		for (int i = 0; i < 26; i++){
+			
+			if (i!=0){
+				for (int j = 0; j < size; j++){
+					char nextLetter = s.at(j);
+					nextLetter++;
+					newString += nextLetter;
+				}
+			}else{
+				newString = s;
+			}
+			
+			double chi = 0;
+		
+			for (char c = 'A'; c <= 'Z'; ++c)
+			{
+				int current_counter = counter(newString, c);
+				
+				int numberExpected = size * sortedTargets[c];
+				
+				chi += (pow((current_counter - numberExpected), 2))/numberExpected;
+				
+			}
+			
+			if(i == 0) {
+				chiMin = chi;
+			}
+				
+			if(chi < chiMin) {
+				chiMin = chi;
+				index = i;
+			}
+		}
+
+		return index;
+	}
+	
+	
 
 };
 
@@ -167,6 +236,9 @@ int main()
 	cout << "Key: " << output_fr.second << endl;
 	cout << "Text: " << output_fr.first << endl;
 
-	cout << "------------Key Length----------> " << vc_fr.getKeyLength(input) << endl;
+	unsigned int  keyLength = vc_fr.getKeyLength(input);
+	cout << "------------Key Length----------> " << keyLength << endl;
+	
+	vc_fr.getKey(input, keyLength);
 
 }
