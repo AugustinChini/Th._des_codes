@@ -5,6 +5,8 @@
 #include <algorithm>
 #include <array>
 #include <math.h>
+#include <sstream>
+#include <fstream>
 
 using namespace std;
 
@@ -16,7 +18,6 @@ private:
 	array<double, 26> targets;
 	array<double, 26> sortedTargets;
 
-	// TO COMPLETE
 
 public:
 	VigenereCryptanalysis(const array<double, 26>& targetFreqs)
@@ -31,12 +32,12 @@ public:
 		string key = "ISIMA PERHAPS";
 		string result = input;
 		
-		unsigned int  keyLength = getKeyLength(result);
+		unsigned int  keyLength = getKeyLength(result);						//getting the key length 
 		cout << "------------Key Length----------> " << keyLength << endl;
 		
-		key = getKey(result, keyLength);
+		key = getKey(result, keyLength);									//getting the key using the length
 		
-		result = decrypt(result, key);
+		result = decrypt(result, key);										//decryption of the text using the key found
 
 		return make_pair(result, key);
 	}
@@ -77,7 +78,7 @@ public:
 		double ICsum = 0;
 		vector<double> vectICAvg;
 
-		// we try to find a key between 2 and 16 char
+		// we try to find a key between 2 and 10 char
 		for (unsigned int i = 1; i <= 10; ++i)
 		{
 			// get the char corresponding to the index
@@ -99,7 +100,7 @@ public:
 					
 					
 					ICsum += getIC(tmp);
-					//cout << "String " << i << " " << tmp << endl;
+
 					tmp = "";
 				}
 				
@@ -122,7 +123,7 @@ public:
 
 		for(unsigned int i = 0; i < v.size() && find == false; ++i)
 		{
-			if(0.06 <= v[i])
+			if(0.06 <= v[i])		//we are looking for an IC value superior to 0.06
 			{
 				index = i;
 				find = true;
@@ -130,15 +131,16 @@ public:
 
 		}
 		
-		if(find)
+		if(find)					//if there is one, we return the index of this IC value
 			return index+1;
 		else {
-			unsigned int maxValIndex = (max_element(v.begin(), v.end()))-v.begin();
-			return maxValIndex+1;
+			unsigned int maxValIndex = (max_element(v.begin(), v.end()))-v.begin();	//if there is no IC value above 0.06
+			return maxValIndex+1;													//we return the maximum IC value
 		}
 	}
 
-	double getIC(string s)
+
+	double getIC(string s)	//calculation of the index of coincidence
 	{
 
 		int size = s.size();
@@ -149,20 +151,14 @@ public:
 		{
 			int current_counter = counter(s, c);
 
-			//cout << c << ":" <<current_counter<< endl;
-
 			res += (current_counter*(current_counter - 1)) / (double)(size*(size - 1));
-
-			//cout << "res : " <<  (current_counter*(current_counter-1))/(double)(size*(size-1)) << endl;
 		}
-
-		//cout << res << endl;
 
 		return res;
 
 	}
 
-	unsigned int counter(const string& s, char c)
+	unsigned int counter(const string& s, char c)	//function to count the number of times a letter appears in a text
 	{
 		unsigned int cpt = 0;
 
@@ -176,7 +172,7 @@ public:
 	}
 	
 	
-	string getKey(string s, int keyLength)
+	string getKey(string s, int keyLength)	//function to get the key of the ciphertext
 	{
 
 		int size = s.size();
@@ -190,19 +186,17 @@ public:
 			
 			for (int j = i; j < size; j+=keyLength){
 				
-				sequence+= s.at(j);
+				sequence+= s.at(j);		//extraction of a sequence from the ciphertext by getting a letter every "keylength" letter
 				
 			}
-			//cout << "------------sequence----------> " << sequence << endl;
-			a = chiSquarred(sequence); //recuperer la lettre correspondant à cet index, chaque lettre correspond à une lettre de la cle
-			//cout << "------------index----------> " << a << endl;
-			b = (char)a;
+
+			a = chiSquarred(sequence); //we calculate the chiSquarred value of the sequence to have the index corresponding to the letter value
+
+			b = (char)a;	//the index is converted into letter
 			b += 'A';
-			//b = (char)('A' - 1 + a);
-			key += b;
+			key += b;	//and added to the key
 		}
 		
-		cout << "------------Key----------> " << key << endl;
 		return key;
 
 	}
@@ -213,13 +207,12 @@ public:
 		unsigned int index = 0;
 		
 		int size = s.size();
-		//cout << "------------string s----------> " << s << endl;
 		
 		string tabString[26];
 		tabString[0] = s;
 		string newString = "";
-		//cout << "------------sequence ----------> " << s << endl;
-		for(int h = 0; h < 26; h++){
+
+		for(int h = 0; h < 26; h++){		//for the sequence we calculate 25 new sequences by shift the letters on by one
 			if (h != 0){
 				for (int j = 0; j < size; j++){
 					char nextLetter = tabString[h-1].at(j);
@@ -238,53 +231,60 @@ public:
 			
 			tabString[h] = newString;
 			newString = "";
-			//cout << "------------string Chi-squarred----------> " << tabString[h] << endl;
 		}
 		
 		
-		for (int i = 0; i < 26; i++){
+		for (int i = 0; i < 26; i++){		//with every sequences we calculate the chiSquarred value
 			
 			double chi = 0;
 		
 			for (char c = 'A'; c <= 'Z'; ++c)
 			{
 				int current_counter = counter(tabString[i], c);
-				//cout << "------------current_counter----------> " << current_counter << endl;
 				
 				int posLetter = c - 'A' + 1;
-				//cout << "------------posLetter----------> " << posLetter << endl;
+				
 				double numberExpected = size * targets[posLetter-1];
 				
-				//cout << "------------c----------> " << c << endl;
-				/*cout << "------------posLetter-1----------> " << posLetter-1 << endl;
-				cout << "------------sortedTargets[posLetter-1]----------> " << targets[posLetter-1] << endl;
-				cout << "------------numberExpected----------> " << numberExpected << endl;
-				cout << "------------chi----------> " << chi << endl;*/
 				chi += (pow((current_counter - numberExpected), 2))/numberExpected;
 				
 			}
-			//cout << "------------chi----------> " << chi << endl;
 			
-			if(i == 0) {
-				chiMin = chi;
+			if(i == 0) {				//if we have calculated chiSquarred value for the first sequence
+				chiMin = chi;			//we initialize the minimum chiSquarred value with the current value
 			}
 				
-			if(chi < chiMin) {
-				chiMin = chi;
+			if(chi < chiMin) {			//if the current chiSquarred value calculated is smaller than chiMin
+				chiMin = chi;			//the chiMin value is updated with the the current chiSquarred value
 				index = i;
 			}
+			
 			newString = "";
-			//cout << "------------chiMin----------> " << chiMin << endl;
+			
 		}
-		//cout << "------------index----------> " << index << endl;
-		//cout << "------------chiMin----------> " << chiMin << endl;
-
+		
 		return index;
 	}
 	
 	
 
 };
+
+string getTextToUpcase(string& text){	//function to convert the text to uppercase
+	
+	string upcasedText = "";
+	
+	for(unsigned int i = 0; i < text.size(); ++i)
+    {
+      if(text[i] >= 'A' && text[i] <= 'Z')
+        upcasedText += text[i];
+      else if(text[i] >= 'a' && text[i] <= 'z')
+        upcasedText += text[i] + 'A' - 'a';
+    }
+    
+    return upcasedText;
+    
+}
 
 int main()
 {
@@ -293,7 +293,45 @@ int main()
 	//BPSRAUNOHCWCBGITMPJQFMEXCXYCIAGPSXCPSXWWEROQCOPITRAEBENTGAYCPMSXPQNYWCDQEVJMAVIDQRZEQESBPCEWCXCYCVYGYCWI 'MYKEY'
 	//string input = "KDVTDFOEJJLNRHRTBNLDETKWPSSJRQTDQJAMUKHSXQEBYIXCVDRZYCVDVPMFIMKRUMUSXYXQYRXVFCXBIGMRHDOVRGSOYSEGCJRFPJECKV";
 	string input = "IEFOMNTUOHENWFWSJBSFFTPGSNMHZSBBIZAOMOSIUXYCQAELRWSKLQZEKJVWSIVIJMHUVASMVWJEWLZGUBZLAVCLHGMUHWHAKOOKAKKGMRELGEEFVWJELKSEDTYHSGGHBAMIYWEELJCEMXSOHLNZUJAGKSHAKAWWDXZCMVKHUWSWLQWTMLSHOJBSGUELGSUMLIJSMLBSIXUHSDBYSDAOLFATXZOFSTSZWRYHWJENUHGUKWZMSHBAGIGZZGNZHZSBTZHALELOSMLASJDTTQZESWWWRKLFGUZL";
-	//Vigenere cipher(input);
+	
+	string nomFichier = "ciphertext_";
+	
+	
+	int choix = 0;
+	while (true) {
+	   cout<<"Quel texte voulez-vous decrypter? Choix possible de 1 a 4"<<endl;
+	   getline(cin, input);
+
+	   stringstream myStream(input);
+	   if (myStream >> choix){
+		   if( choix > 0 && choix < 5) break;
+	   }
+	   cout << "Chiffre invalide, choisissez un chiffre entre 1 et 4" << endl;
+	 }
+	 
+	 char c = choix +'0';
+	 nomFichier += c;
+	 nomFichier += ".txt";
+	 
+	 ifstream fichier(nomFichier, ios::in);  // we open the file in reading mode
+ 
+	 if(fichier)  // if the openning went well
+	 {
+			getline(fichier, input);  // we get the ciphertext of the file
+
+			fichier.close();		//and we close the file
+	 }
+	 else{
+		 cerr << "Impossible d'ouvrir le fichier " + nomFichier + "!" << endl;	//if it was impossible to open the file, we warn the user
+		 exit(1);																//and the program ends
+	 }
+	 
+	input = getTextToUpcase(input);		//we convert the input text to uppercase
+ 
+	cout << "Texte à decrypter: " << endl;
+	cout << input << endl;
+	cout << endl;
+	
 
 	array<double, 26> english = {
 		0.08167, 0.01492, 0.02782, 0.04253, 0.12702, 0.02228,
@@ -309,22 +347,18 @@ int main()
 		0.0887,  0.0744,  0.0523,  0.0128,  0.0006,  0.0053,
 		0.0026,  0.0012 };
 
+	cout << "Decryptage pour un texte anglais:" << endl;
 	VigenereCryptanalysis vc_en(english);
 	pair<string, string> output_en = vc_en.analyze(input);
 
 	cout << "Key: " << output_en.second << endl;
 	cout << "Text: " << output_en.first << endl << endl;
 
+	cout << "Decryptage pour un texte francais:" << endl;
 	VigenereCryptanalysis vc_fr(french);
 	pair<string, string> output_fr = vc_fr.analyze(input);
 
 	cout << "Key: " << output_fr.second << endl;
 	cout << "Text: " << output_fr.first << endl;
-
-	//unsigned int  keyLength = vc_fr.getKeyLength(input);
-	//cout << "------------Key Length----------> " << keyLength << endl;
-	
-	/*vc_fr.getKey(input, keyLength);
-	vc_en.getKey(input, keyLength);*/
 
 }
