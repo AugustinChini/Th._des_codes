@@ -29,10 +29,47 @@ public:
 	pair<string, string> analyze(string input)
 	{
 		string key = "ISIMA PERHAPS";
-		string result = "I CAN NOT DECRYPT THIS TEXT FOR NOW :-)" + input;
+		string result = input;
+		
+		unsigned int  keyLength = getKeyLength(result);
+		cout << "------------Key Length----------> " << keyLength << endl;
+		
+		key = getKey(result, keyLength);
+		
+		result = decrypt(result, key);
 
 		return make_pair(result, key);
 	}
+	
+  string decrypt(string text, string key)
+  {
+    string out;
+    
+    unsigned int j = 0;
+    
+    for(unsigned int i = 0; i < text.size(); ++i)
+    {   
+		char current_code_char = text.at(i);
+		
+		char current_key_char = key.at(j);
+		
+		if(j != (key.size())-1)
+		{
+			++j;
+		}
+		else
+		{
+			j = 0;
+		}
+		
+		char encrypt_index = ((current_code_char - current_key_char+26)%26)+'A';
+		
+		out.push_back(encrypt_index);
+		
+    }
+
+    return out;
+  }
 
 	unsigned int getKeyLength(string encrypt)
 	{
@@ -92,8 +129,13 @@ public:
 			}
 
 		}
-
-		return index+1;
+		
+		if(find)
+			return index+1;
+		else {
+			unsigned int maxValIndex = (max_element(v.begin(), v.end()))-v.begin();
+			return maxValIndex+1;
+		}
 	}
 
 	double getIC(string s)
@@ -134,10 +176,13 @@ public:
 	}
 	
 	
-	void getKey(string s, int keyLength)
+	string getKey(string s, int keyLength)
 	{
 
 		int size = s.size();
+		string key = "";
+		char b;
+		int a;
 		
 		for(int i = 0; i < keyLength; i++){
 			
@@ -145,11 +190,20 @@ public:
 			
 			for (int j = i; j < size; j+=keyLength){
 				
-				sequence+= s.at(i);
+				sequence+= s.at(j);
 				
 			}
-			chiSquarred(sequence); //recuperer la lettre correspondant à cet index, chaque lettre correspond à une lettre de la cle
+			//cout << "------------sequence----------> " << sequence << endl;
+			a = chiSquarred(sequence); //recuperer la lettre correspondant à cet index, chaque lettre correspond à une lettre de la cle
+			//cout << "------------index----------> " << a << endl;
+			b = (char)a;
+			b += 'A';
+			//b = (char)('A' - 1 + a);
+			key += b;
 		}
+		
+		cout << "------------Key----------> " << key << endl;
+		return key;
 
 	}
 	
@@ -159,32 +213,57 @@ public:
 		unsigned int index = 0;
 		
 		int size = s.size();
+		//cout << "------------string s----------> " << s << endl;
 		
+		string tabString[26];
+		tabString[0] = s;
 		string newString = "";
-		
-		for (int i = 0; i < 26; i++){
-			
-			if (i!=0){
+		//cout << "------------sequence ----------> " << s << endl;
+		for(int h = 0; h < 26; h++){
+			if (h != 0){
 				for (int j = 0; j < size; j++){
-					char nextLetter = s.at(j);
-					nextLetter++;
+					char nextLetter = tabString[h-1].at(j);
+					
+					if (nextLetter == 'A')
+						nextLetter = 'Z';
+					else
+						nextLetter = (char)(((int) nextLetter) - 1);
+					
+					
 					newString += nextLetter;
 				}
 			}else{
 				newString = s;
 			}
 			
+			tabString[h] = newString;
+			newString = "";
+			//cout << "------------string Chi-squarred----------> " << tabString[h] << endl;
+		}
+		
+		
+		for (int i = 0; i < 26; i++){
+			
 			double chi = 0;
 		
 			for (char c = 'A'; c <= 'Z'; ++c)
 			{
-				int current_counter = counter(newString, c);
+				int current_counter = counter(tabString[i], c);
+				//cout << "------------current_counter----------> " << current_counter << endl;
 				
-				int numberExpected = size * sortedTargets[c];
+				int posLetter = c - 'A' + 1;
+				//cout << "------------posLetter----------> " << posLetter << endl;
+				double numberExpected = size * targets[posLetter-1];
 				
+				//cout << "------------c----------> " << c << endl;
+				/*cout << "------------posLetter-1----------> " << posLetter-1 << endl;
+				cout << "------------sortedTargets[posLetter-1]----------> " << targets[posLetter-1] << endl;
+				cout << "------------numberExpected----------> " << numberExpected << endl;
+				cout << "------------chi----------> " << chi << endl;*/
 				chi += (pow((current_counter - numberExpected), 2))/numberExpected;
 				
 			}
+			//cout << "------------chi----------> " << chi << endl;
 			
 			if(i == 0) {
 				chiMin = chi;
@@ -194,7 +273,11 @@ public:
 				chiMin = chi;
 				index = i;
 			}
+			newString = "";
+			//cout << "------------chiMin----------> " << chiMin << endl;
 		}
+		//cout << "------------index----------> " << index << endl;
+		//cout << "------------chiMin----------> " << chiMin << endl;
 
 		return index;
 	}
@@ -208,7 +291,9 @@ int main()
 	//KDVTDFOEJJLNRHRTBNLDETKWPSSJRQTDQJAMUKHSXQEBYIXCVDRZYCVDVPMFIMKRUMUSXYXQYRXVFCXBIGMRHDOVRGSOYSEGCJRFPJECKV 'AZERTY'
 	//PRINCIPEDEKERCKHOFFSTOUTELASECURITEDUNSYSTEMECRYPTOGRAPHIQUEDOITREPOSERSURLACLEFETPASSURLESYSTEMELUIMEME
 	//BPSRAUNOHCWCBGITMPJQFMEXCXYCIAGPSXCPSXWWEROQCOPITRAEBENTGAYCPMSXPQNYWCDQEVJMAVIDQRZEQESBPCEWCXCYCVYGYCWI 'MYKEY'
-	string input = "KDVTDFOEJJLNRHRTBNLDETKWPSSJRQTDQJAMUKHSXQEBYIXCVDRZYCVDVPMFIMKRUMUSXYXQYRXVFCXBIGMRHDOVRGSOYSEGCJRFPJECKV";
+	//string input = "KDVTDFOEJJLNRHRTBNLDETKWPSSJRQTDQJAMUKHSXQEBYIXCVDRZYCVDVPMFIMKRUMUSXYXQYRXVFCXBIGMRHDOVRGSOYSEGCJRFPJECKV";
+	string input = "IEFOMNTUOHENWFWSJBSFFTPGSNMHZSBBIZAOMOSIUXYCQAELRWSKLQZEKJVWSIVIJMHUVASMVWJEWLZGUBZLAVCLHGMUHWHAKOOKAKKGMRELGEEFVWJELKSEDTYHSGGHBAMIYWEELJCEMXSOHLNZUJAGKSHAKAWWDXZCMVKHUWSWLQWTMLSHOJBSGUELGSUMLIJSMLBSIXUHSDBYSDAOLFATXZOFSTSZWRYHWJENUHGUKWZMSHBAGIGZZGNZHZSBTZHALELOSMLASJDTTQZESWWWRKLFGUZL";
+	//Vigenere cipher(input);
 
 	array<double, 26> english = {
 		0.08167, 0.01492, 0.02782, 0.04253, 0.12702, 0.02228,
@@ -228,7 +313,7 @@ int main()
 	pair<string, string> output_en = vc_en.analyze(input);
 
 	cout << "Key: " << output_en.second << endl;
-	cout << "Text: " << output_en.first << endl;
+	cout << "Text: " << output_en.first << endl << endl;
 
 	VigenereCryptanalysis vc_fr(french);
 	pair<string, string> output_fr = vc_fr.analyze(input);
@@ -236,9 +321,10 @@ int main()
 	cout << "Key: " << output_fr.second << endl;
 	cout << "Text: " << output_fr.first << endl;
 
-	unsigned int  keyLength = vc_fr.getKeyLength(input);
-	cout << "------------Key Length----------> " << keyLength << endl;
+	//unsigned int  keyLength = vc_fr.getKeyLength(input);
+	//cout << "------------Key Length----------> " << keyLength << endl;
 	
-	vc_fr.getKey(input, keyLength);
+	/*vc_fr.getKey(input, keyLength);
+	vc_en.getKey(input, keyLength);*/
 
 }
