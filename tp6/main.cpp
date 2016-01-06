@@ -6,8 +6,6 @@
 #include <iostream>
 #include <gmp.h>
 
-#define BITSTRENGTH  14              /* size of modulus (n) in bits */
-#define PRIMESIZE (BITSTRENGTH / 2)  /* size of the primes p and q  */
 
 
 /*function which make the rsa encryption
@@ -23,7 +21,7 @@
  * [1]: Private Keys
  * [2]: The encrypted message
  */
-mpz_t* rsa_encrypt(const char* s_msg, const char* s_seed, int primes_size, mpz_t tab_res[3])
+mpz_t* rsa_encrypt(mpz_t msg, mpz_t seed, int primes_size, mpz_t tab_res[3])
 {
     /* Declare global variables */
     mpz_t d,e,n;
@@ -44,10 +42,6 @@ mpz_t* rsa_encrypt(const char* s_msg, const char* s_seed, int primes_size, mpz_t
     mpz_t p,q;
     mpz_init(p);
     mpz_init(q);
-
-    mpz_t seed;
-    mpz_init(seed);
-    mpz_init_set_str(seed, s_seed, 0);
     
     gmp_randstate_t rand;
     gmp_randinit_mt(rand);
@@ -148,11 +142,6 @@ mpz_t* rsa_encrypt(const char* s_msg, const char* s_seed, int primes_size, mpz_t
     /*
      *  Encrypt
      */
-
-    mpz_t msg;
-    mpz_init(msg);
-    
-    mpz_init_set_str(msg, s_msg, 0);
     
     mpz_t c_msg;
     mpz_init(c_msg);
@@ -187,24 +176,17 @@ mpz_t* rsa_encrypt(const char* s_msg, const char* s_seed, int primes_size, mpz_t
     return tab_res;
 }
 
-void rsa_decrypt(mpz_t* tab)
+void rsa_decrypt(mpz_t d_msg, mpz_t* tab)
 {
-    mpz_t d_msg;
-
-    mpz_init(d_msg);
-
     mpz_powm(d_msg, tab[3], tab[2], tab[0]);
 
-    char dec_str[1000];
+    /*char dec_str[1000];
     mpz_get_str(dec_str,10,d_msg);
 
-    std::cout << "le message c'etait bien " << dec_str << " non ?" << std::endl;
-
-    //return d_msg;
+    //std::cout << "le message c'etait bien " << dec_str << " non ?" << std::endl;*/
 }
 
-/* Main subroutine */
-int main()
+void rsa_random_test (int iter)
 {
     mpz_t tab_res[4];
 
@@ -214,9 +196,59 @@ int main()
         mpz_init(tab_res[i]);
     }
 
-    rsa_encrypt("123456789", "2369464435", 30, tab_res);
+    mpz_t msg, d_msg, seed;
 
-    rsa_decrypt(tab_res);
+    mpz_init(d_msg);
+    mpz_init(seed);
+    mpz_init(msg);
+
+
+    unsigned long int ui_seed = time(NULL);
+
+    mpz_init_set_ui (seed, ui_seed);
+    
+    gmp_randstate_t rand;
+    gmp_randinit_mt(rand);
+    gmp_randseed(rand, seed);
+    
+
+    for (int i = iter; i != 0; --i)
+    {
+        // get rand numbers, it's the message to encrypt
+        mpz_urandomb(msg, rand, 10);
+
+        // get rand numbers, it's the seed for the two prims
+        mpz_urandomb(seed, rand, 5);
+
+        rsa_encrypt(msg, seed, 30, tab_res);
+
+        rsa_decrypt(d_msg, tab_res);
+
+
+        char msg_str[1000];
+        mpz_get_str(msg_str,10, msg);
+
+        char d_str[1000];
+        mpz_get_str (d_str,10, d_msg);
+
+        char e_str[1000];
+        mpz_get_str( e_str,10, tab_res[3]);
+
+        std::cout << "-------------------------------------------------" << std::endl;
+        std::cout << "| Message sent      : " << msg_str << std::endl;
+        std::cout << "| Message encrypted : " << e_str << std::endl;
+        std::cout << "| Message decrypted : " << d_str << std::endl;
+        std::cout << "-------------------------------------------------" << std::endl;
+
+
+    }
+}
+
+/* Main subroutine */
+int main()
+{
+
+    rsa_random_test (5);
 
     return 0;
 }
