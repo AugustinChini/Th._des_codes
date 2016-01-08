@@ -7,6 +7,155 @@
 #include <gmp.h>
 
 
+/*
+ * exponentiation rapide 
+ */
+void powm(mpz_t msg, mpz_t base, mpz_t exp, mpz_t mod)
+{
+    int result =  mpz_cmp_ui(exp, 0);
+    
+    mpz_t g, k, y;
+    
+    mpz_init(y);
+    mpz_init(g);
+    mpz_init(k);
+    
+    mpz_set_ui(y, 1);
+    mpz_set(g, base);
+
+    // exp < 0
+    if( result < 0 ) 
+    {       
+        // base = 1 / base
+        mpz_fdiv_q(g, y, base);
+        mpz_mul_ui(k, k, -1);
+    }
+    // exp = 0
+    else if( result == 0 )
+    {
+        mpz_set_ui(msg, 1);
+        
+        mpz_clear(y);
+        mpz_clear(g);
+        mpz_clear(k);
+        
+        return;
+    }
+    
+    mpz_set(k, exp);
+    
+    // tant que exp > 1
+    while( mpz_cmp_ui(k, 1) > 0 )
+    {       
+        if( mpz_even_p(k) != 0 )
+        {           
+            mpz_mul(g, g, g);
+            mpz_mod(g, g, mod);
+            
+            mpz_fdiv_q_ui(k, k, 2);
+        }
+        else
+        {
+            mpz_mul(y, g, y);
+            mpz_mul(g, g, g);
+            
+            mpz_sub_ui(k, k, 1);
+            mpz_fdiv_q_ui(k, k, 2);
+        }
+    }
+    
+    mpz_mul(msg, g, y);
+    mpz_mod(msg, msg, mod);
+    
+    mpz_clear(g);
+    mpz_clear(k);
+    mpz_clear(y);
+}
+
+bool RabinMiller_prime_test(mpz_t n, int iter)
+{
+
+    mpz_t tmp,a, s, t, mod, seed;
+    mpz_init(tmp);
+    mpz_init(a);
+    mpz_init(mod);
+    mpz_init(s);
+    mpz_init(t);
+    mpz_init(seed);
+
+    if(mpz_cmp_ui(n, 2) < 0)
+    {
+        return false;
+    }
+
+    // sub 1 to the nber
+    mpz_sub_ui (n, n, 1);
+    mpz_set(s, n);
+    mpz_add_ui (n, n, 1);
+
+    mpz_mod_ui (tmp, s, 2);
+    while(tmp == 0)
+    {
+        mpz_cdiv_q_ui (s, s, 2);
+    }
+
+
+    unsigned long int ui_seed = time(NULL);
+
+    mpz_init_set_ui (seed, ui_seed);
+    
+    gmp_randstate_t rand;
+    gmp_randinit_mt(rand);
+    gmp_randseed(rand, seed);
+    
+
+    for (int i = 0; i < iter; ++i)
+    {
+        mpz_urandomm(a, rand, n);
+
+        mpz_set(tmp, s);
+        powm(mod, a, tmp, n);
+
+        mpz_sub_ui (n, n, 1);
+        while(mpz_cmp(tmp, n) != 0 && mpz_cmp_ui(mod, 1) != 0 && mpz_cmp(mod, n) != 0)
+        {
+            mpz_add_ui (n, n, 1);
+
+            mpz_t two;
+            mpz_init(two);
+            mpz_set_ui(two, 2);
+            powm(mod, mod, two, n);
+
+            mpz_mul_ui(tmp, tmp, 2);
+
+            std::cout << "mpz_cmp(tmp, n) != 0 && mpz_cmp_ui(mod, 1) != 0 && mpz_cmp(mod, n) != 0 --  " << mpz_cmp(tmp, n) << " - " << mpz_cmp_ui(mod, 1) << " - " << mpz_cmp(mod, n) << std::endl;
+        }
+
+        mpz_t res_mod;
+
+        mpz_init(res_mod);
+
+        mpz_mod_ui(res_mod, tmp, 2);
+
+        mpz_sub_ui (n, n, 1);
+
+        if(mpz_cmp(mod, n) != 0 && mpz_cmp_ui(res_mod ,0))
+        {
+            return false;
+        }
+    }
+
+    return true;
+
+}
+
+/*
+ * test de primalité de Rabin-Miller
+ */ 
+void nextprime(mpz_t rop, mpz_t op)
+{
+
+}
 
 /*function which make the rsa encryption
  * This function creates the keys.
@@ -47,13 +196,14 @@ mpz_t* rsa_encrypt(mpz_t msg, mpz_t seed, int primes_size, mpz_t tab_res[3])
     gmp_randinit_mt(rand);
     gmp_randseed(rand, seed);
     
-    // get rand numbers
+    // get rand nbers
     mpz_urandomb(p, rand, primes_size);
     mpz_urandomb(q, rand, primes_size);
     
-    // get the next prime number
+    // get the next prime nber
     mpz_nextprime(p, p);
     mpz_nextprime(q, q);
+    std::cout << "attention ------------------->" << RabinMiller_prime_test(p,30) << std::endl;
     /*mpz_init_set_str(p, "47", 0);
     mpz_init_set_str(q, "71", 0);*/
 
@@ -146,7 +296,7 @@ mpz_t* rsa_encrypt(mpz_t msg, mpz_t seed, int primes_size, mpz_t tab_res[3])
     mpz_t c_msg;
     mpz_init(c_msg);
     
-    mpz_powm(c_msg, msg, e, n);
+    powm(c_msg, msg, e, n);
     
     char c_str[1000];
     mpz_get_str(c_str,10,c_msg);
@@ -170,15 +320,12 @@ mpz_t* rsa_encrypt(mpz_t msg, mpz_t seed, int primes_size, mpz_t tab_res[3])
     mpz_clear(M);
     mpz_clear(c);
 
-
-    mpz_set(tab_res[3], c_msg);
-
     return tab_res;
 }
 
 void rsa_decrypt(mpz_t d_msg, mpz_t* tab)
 {
-    mpz_powm(d_msg, tab[3], tab[2], tab[0]);
+    powm(d_msg, tab[3], tab[2], tab[0]);
 
     /*char dec_str[1000];
     mpz_get_str(dec_str,10,d_msg);
@@ -190,7 +337,7 @@ void rsa_random_test (int iter)
 {
     mpz_t tab_res[4];
 
-    /* init the mpz number*/
+    /* init the mpz nber*/
     for(int i = 0; i<4; ++i)
     {
         mpz_init(tab_res[i]);
@@ -214,10 +361,10 @@ void rsa_random_test (int iter)
 
     for (int i = iter; i != 0; --i)
     {
-        // get rand numbers, it's the message to encrypt
+        // get rand nbers, it's the message to encrypt
         mpz_urandomb(msg, rand, 10);
 
-        // get rand numbers, it's the seed for the two prims
+        // get rand nbers, it's the seed for the two prims
         mpz_urandomb(seed, rand, 5);
 
         rsa_encrypt(msg, seed, 30, tab_res);
@@ -249,6 +396,7 @@ int main()
 {
 
     rsa_random_test (5);
+
 
     return 0;
 }
