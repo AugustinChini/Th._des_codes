@@ -72,78 +72,78 @@ void powm(mpz_t msg, mpz_t base, mpz_t exp, mpz_t mod)
     mpz_clear(y);
 }
 
-bool RabinMiller_prime_test(mpz_t n, int iter)
+bool RabinMiller_prime_test(mpz_t n, int iter, int primes_size)
 {
 
-    mpz_t tmp,a, s, t, mod, seed;
+    mpz_t tmp,a, s, t, mod, seed, p, modTst;
     mpz_init(tmp);
     mpz_init(a);
     mpz_init(mod);
     mpz_init(s);
     mpz_init(t);
     mpz_init(seed);
+    mpz_init(p);
+    mpz_init(modTst);
 
     if(mpz_cmp_ui(n, 2) < 0)
     {
         return false;
     }
 
-    // sub 1 to the nber
-    mpz_sub_ui (n, n, 1);
-    mpz_set(s, n);
-    mpz_add_ui (n, n, 1);
-
-    mpz_mod_ui (tmp, s, 2);
-    while(tmp == 0)
-    {
-        mpz_cdiv_q_ui (s, s, 2);
-    }
+    mpz_mod_ui(mod, n, 2);
+		
+	if( mpz_cmp_ui(n, 2) != 0 && mpz_cmp_ui(mod, 0) == 0 )
+	{
+		return false;
+	}
 
 
-    unsigned long int ui_seed = time(NULL);
-
-    mpz_init_set_ui (seed, ui_seed);
-    
-    gmp_randstate_t rand;
-    gmp_randinit_mt(rand);
-    gmp_randseed(rand, seed);
-    
-
-    for (int i = 0; i < iter; ++i)
-    {
-        mpz_urandomm(a, rand, n);
-
-        mpz_set(tmp, s);
-        powm(mod, a, tmp, n);
-
-        mpz_sub_ui (n, n, 1);
-        while(mpz_cmp(tmp, n) != 0 && mpz_cmp_ui(mod, 1) != 0 && mpz_cmp(mod, n) != 0)
-        {
-            mpz_add_ui (n, n, 1);
-
-            mpz_t two;
-            mpz_init(two);
-            mpz_set_ui(two, 2);
-            powm(mod, mod, two, n);
-
-            mpz_mul_ui(tmp, tmp, 2);
-
-            std::cout << "mpz_cmp(tmp, n) != 0 && mpz_cmp_ui(mod, 1) != 0 && mpz_cmp(mod, n) != 0 --  " << mpz_cmp(tmp, n) << " - " << mpz_cmp_ui(mod, 1) << " - " << mpz_cmp(mod, n) << std::endl;
-        }
-
-        mpz_t res_mod;
-
-        mpz_init(res_mod);
-
-        mpz_mod_ui(res_mod, tmp, 2);
-
-        mpz_sub_ui (n, n, 1);
-
-        if(mpz_cmp(mod, n) != 0 && mpz_cmp_ui(res_mod ,0))
-        {
-            return false;
-        }
-    }
+    mpz_sub_ui(s, n, 1);
+	mpz_mod_ui(mod, s, 2);
+	
+	while( mpz_cmp_ui(mod, 0) == 0 )
+	{
+		mpz_fdiv_q_ui(s, s, 2);
+		mpz_mod_ui(mod, s, 2);
+	}
+	
+	unsigned long int ui_seed = time(NULL);
+	
+	mpz_init_set_ui(seed, ui_seed);
+	
+	gmp_randstate_t rand;
+	gmp_randinit_mt(rand);
+	gmp_randseed(rand, seed);
+	
+	// n - 1
+	mpz_sub_ui(p, n, 1);			
+	
+	for(int i = 0; i < iter; ++i)
+	{		
+		//  a=rand()%(p-1)+1
+		mpz_urandomb(a, rand, primes_size);
+		mpz_mod(a, a, p);
+		mpz_add_ui(a, a, 1);
+		
+		mpz_set(tmp, s);
+		
+		powm(mod, a, tmp, n);
+		
+		while( mpz_cmp(tmp, p) != 0 && mpz_cmp_ui(mod, 1) != 0 && mpz_cmp(mod, p) !=0 )
+		{
+			mpz_mul(mod, mod, mod);
+			mpz_mod(mod, mod, n);
+		
+			mpz_mul_ui(tmp, tmp, 2);
+		}
+		
+		mpz_mod_ui(modTst, tmp, 2);
+		
+		if( mpz_cmp(mod, p) != 0 && mpz_cmp_ui(modTst, 0) == 0 )
+		{
+			return false;
+		}
+	}
 
     return true;
 
@@ -152,9 +152,107 @@ bool RabinMiller_prime_test(mpz_t n, int iter)
 /*
  * test de primalité de Rabin-Miller
  */ 
-void nextprime(mpz_t rop, mpz_t op)
+void nextprime(mpz_t rop, mpz_t op, int primes_size)
 {
+	do
+	{
+		mpz_add_ui(rop, op, 1);
+		
+	} while( ! RabinMiller_prime_test(rop, 10, primes_size) );
 
+}
+
+/* Algorithme d'Euclide etendu */
+void extendedEuclide(mpz_t rop, mpz_t u, mpz_t v, const mpz_t op1, const mpz_t op2)
+{
+	mpz_t rop2;
+	mpz_init(rop2);
+	mpz_t u2;
+	mpz_init(u2);
+	mpz_t v2;
+	mpz_init(v2);
+	mpz_t quot;
+	mpz_init(quot);
+	
+	mpz_t rops;
+	mpz_init(rops);
+	mpz_t us;
+	mpz_init(us);
+	mpz_t vs;
+	mpz_init(vs);
+	
+	mpz_t qrop;
+	mpz_init(qrop);
+	mpz_t qu;
+	mpz_init(qu);
+	mpz_t qv;
+	mpz_init(qv);
+	
+	mpz_set(rop, op1);
+	mpz_set(rop2, op2);
+	mpz_set_ui(u, 1);
+	mpz_set_ui(v, 0);
+	mpz_set_ui(u2, 0);
+	mpz_set_ui(v2, 1);
+	
+	while( mpz_cmp_ui(rop2, 0) != 0 )
+	{
+		mpz_fdiv_q(quot, rop, rop2);
+		
+		mpz_set(rops, rop);
+		mpz_set(us, u);
+		mpz_set(vs, v);
+		
+		mpz_set(rop, rop2);
+		mpz_set(u, u2);
+		mpz_set(v, v2);
+		
+		mpz_mul(qrop, quot, rop2);
+		mpz_mul(qu, quot, u2);
+		mpz_mul(qv, quot, v2);
+		
+		mpz_sub(rop2, rops, qrop);
+		mpz_sub(u2, us, qu);
+		mpz_sub(v2, vs, qv); 
+	}
+	
+	mpz_clear(rop2);
+	mpz_clear(u2);
+	mpz_clear(v2);
+	mpz_clear(quot);
+	mpz_clear(rops);
+	mpz_clear(us);
+	mpz_clear(vs);
+	mpz_clear(qrop);
+	mpz_clear(qu);
+	mpz_clear(qv);
+}
+
+/*fonction remplacant mpz_invert en utilisant l'algorithme d'euclide etendu*/
+int invert(mpz_t rop, const mpz_t op1, const mpz_t op2)
+{
+	mpz_t r, u, v;
+	
+	mpz_init(r);
+	mpz_init(u);
+	mpz_init(v);
+	
+	extendedEuclide(rop, u, v, op1, op2);
+	
+	mpz_set(rop, u);
+	
+	int i = 1;
+	while( mpz_cmp_ui(rop, 0) < 0 )
+	{
+		mpz_mul_ui(r, op2, i);
+		mpz_add(rop, u, r);
+	}
+
+	mpz_clear(r);
+	mpz_clear(u);
+	mpz_clear(v);
+	
+	return 1;
 }
 
 /*function which make the rsa encryption
@@ -201,9 +299,13 @@ mpz_t* rsa_encrypt(mpz_t msg, mpz_t seed, int primes_size, mpz_t tab_res[3])
     mpz_urandomb(q, rand, primes_size);
     
     // get the next prime nber
-    mpz_nextprime(p, p);
-    mpz_nextprime(q, q);
-    std::cout << "attention ------------------->" << RabinMiller_prime_test(p,30) << std::endl;
+    //mpz_nextprime(p, p);
+    nextprime(p,p,primes_size);
+    //mpz_nextprime(q, q);
+    nextprime(q,q,primes_size);
+    
+   // std::cout << "attention ------------------->" << RabinMiller_prime_test(p,30) << std::endl;
+   
     /*mpz_init_set_str(p, "47", 0);
     mpz_init_set_str(q, "71", 0);*/
 
@@ -270,7 +372,7 @@ mpz_t* rsa_encrypt(mpz_t msg, mpz_t seed, int primes_size, mpz_t tab_res[3])
      *  Step 4 : Calculate unique d such that ed = 1(mod x)
      */
     //mpz_init_set_str(d, "1019", 0);
-    if(mpz_invert (d, e, x) == 0)
+    if(invert (d, e, x) == 0) //if(mpz_invert (d, e, x) == 0)
     {
         std::cerr << "T_T invert error" << std::endl;
         exit(-1);
