@@ -72,6 +72,9 @@ void powm(mpz_t msg, mpz_t base, mpz_t exp, mpz_t mod)
     mpz_clear(y);
 }
 
+
+// test sur les nombre prrmier de Rabin Miller si le nombre n'est pas premier la fonction renverra false sinon c'est probable qu'il soit pemier
+// alors on execute le test plusieurs fois (iter)
 bool RabinMiller_prime_test(mpz_t n, int iter, int primes_size)
 {
 
@@ -84,7 +87,8 @@ bool RabinMiller_prime_test(mpz_t n, int iter, int primes_size)
     mpz_init(seed);
     mpz_init(p);
     mpz_init(modTst);
-
+	
+	// si le nombre est égale 2 deux il n'est pas premier
     if(mpz_cmp_ui(n, 2) < 0)
     {
         return false;
@@ -107,6 +111,8 @@ bool RabinMiller_prime_test(mpz_t n, int iter, int primes_size)
 		mpz_mod_ui(mod, s, 2);
 	}
 	
+	
+	// initialisation des générateurs aléatoire
 	unsigned long int ui_seed = time(NULL);
 	
 	mpz_init_set_ui(seed, ui_seed);
@@ -118,6 +124,7 @@ bool RabinMiller_prime_test(mpz_t n, int iter, int primes_size)
 	// n - 1
 	mpz_sub_ui(p, n, 1);			
 	
+	// on recommence le test iter fois pour affiner la probabilité d'avoir un nombre premier
 	for(int i = 0; i < iter; ++i)
 	{		
 		//  a=rand()%(p-1)+1
@@ -162,7 +169,11 @@ void nextprime(mpz_t rop, mpz_t op, int primes_size)
 
 }
 
-/* Algorithme d'Euclide etendu */
+/* Algorithme d'Euclide etendu
+ * 
+ * permet de trouver le plus grand commun diviseur entre deux nombres
+ * 
+ * */
 void extendedEuclide(mpz_t rop, mpz_t u, mpz_t v, const mpz_t op1, const mpz_t op2)
 {
 	mpz_t rop2;
@@ -264,9 +275,10 @@ int invert(mpz_t rop, const mpz_t op1, const mpz_t op2)
  *  4. Calculate the unique d such that ed = 1(mod x)
  *  5. Public key pair : (e,n), Private key pair : (d,n)
  * and return an array of mpz_t with
- * [0]: Public Keys
+ * [0]: n
  * [1]: Private Keys
- * [2]: The encrypted message
+ * [2]: Public Keys
+ * [3]: The encrypted message
  */
 mpz_t* rsa_encrypt(mpz_t msg, mpz_t seed, int primes_size, mpz_t tab_res[3])
 {
@@ -435,25 +447,36 @@ void rsa_decrypt(mpz_t d_msg, mpz_t* tab)
     //std::cout << "le message c'etait bien " << dec_str << " non ?" << std::endl;*/
 }
 
+// fonction qui appel plusieurs fois les fonctions de codage / décodage avec des données aléatoires
 void rsa_random_test (int iter)
 {
+	/*
+	 * Tableau de mpz_t contenant :
+	 * [0]: n
+	 * [1]: Private Keys
+	 * [2]: Public Keys
+	 * [3]: The encrypted message
+	 */
     mpz_t tab_res[4];
 
-    /* init the mpz nber*/
+    /* init the mpz numbers*/
     for(int i = 0; i<4; ++i)
     {
         mpz_init(tab_res[i]);
     }
 
+	// initialisation des variables locales 
     mpz_t msg, d_msg, seed;
 
     mpz_init(d_msg);
     mpz_init(seed);
     mpz_init(msg);
 
-
+	// Pour avoir une graines qui n'est pas la même à chaque exécution du code
+	// on utilise le temps
     unsigned long int ui_seed = time(NULL);
 
+	// initialisation du génératieur de nombres aléatoires
     mpz_init_set_ui (seed, ui_seed);
     
     gmp_randstate_t rand;
@@ -463,17 +486,19 @@ void rsa_random_test (int iter)
 
     for (int i = iter; i != 0; --i)
     {
-        // get rand nbers, it's the message to encrypt
+        // génération d'un nombre aléatoire (c'est le message à envoyer)
         mpz_urandomb(msg, rand, 10);
 
-        // get rand nbers, it's the seed for the two prims
+        // génération d'un nombre aléatoire (c'est la graine pour les générateurs de nombres premiers)
         mpz_urandomb(seed, rand, 5);
-
+		
+		// on encrypte le message
         rsa_encrypt(msg, seed, 30, tab_res);
-
+		
+		// on decrypte le message
         rsa_decrypt(d_msg, tab_res);
 
-
+		// conversion en chaine de caractaires pour l'affichage
         char msg_str[1000];
         mpz_get_str(msg_str,10, msg);
 
@@ -483,6 +508,7 @@ void rsa_random_test (int iter)
         char e_str[1000];
         mpz_get_str( e_str,10, tab_res[3]);
 
+		// Affichage
         std::cout << "-------------------------------------------------" << std::endl;
         std::cout << "| Message sent      : " << msg_str << std::endl;
         std::cout << "| Message encrypted : " << e_str << std::endl;
@@ -496,7 +522,8 @@ void rsa_random_test (int iter)
 /* Main subroutine */
 int main()
 {
-
+	
+	// appel de la fonction de test encodage/decodage
     rsa_random_test (5);
 
 
