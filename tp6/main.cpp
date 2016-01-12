@@ -316,7 +316,6 @@ mpz_t* rsa_encrypt(mpz_t msg, mpz_t seed, int primes_size, mpz_t tab_res[3])
     //mpz_nextprime(q, q);
     nextprime(q,q,primes_size);
     
-   // std::cout << "attention ------------------->" << RabinMiller_prime_test(p,30) << std::endl;
    
     /*mpz_init_set_str(p, "47", 0);
     mpz_init_set_str(q, "71", 0);*/

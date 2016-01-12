@@ -1,0 +1,21 @@
+Pour le chiffrement de RSA, il faut passer par plusieurs étapes.
+La première étape correspond à la création des clés pour chiffrer et déchiffrer les messages.
+
+Tout d'abord il faut choisir deux grands nombres premiers distincts,
+pour celà on génère deux nombres aléatoires et on récupère le prochain nombre premier 
+à partir de ces nombres. Pour celà, on utilisait au départ la fonction mpz_nextprime
+et en suite nous avons utilisé une fonction nextprime que nous avons créé en 
+utilisant le test de primalité de Rabin-Miller.
+Ensuite, on calcule le module de chiffrement n à partir des deux nombres premiers
+et la valeur de l'indicatrice d'Euler en n nommé o(n).
+Pour choisir un entier naturel e premier avec cette valeur o(n) et strictement inférieur 
+à ce dernier, on utilisait au départ la fonction mpz_invert et ensuite nous avons créé 
+notre propre fonction invert qui calcule la valeur de l'exposant de déchiffrement e en 
+utilisant l'algorithme d'Euclide étendu (fonction extendedEuclide).
+Pour terminer, on utilise cet exposant e pour calculer l'exposant de déchiffrement d 
+et on calcule les clés publiques et privées RSA Ke = (e,n) et Kd = (d,n).  
+
+La seconde étape correspond au chiffrement du message de départ. Pour celà, on utilisait 
+au début la fonction mpz_powm pour calculer l'exponentiation modulaire. Par lasuite, on a remplacé
+cette fonction par la fonction powm qui un algorithme d'exponentiation rapide.
+Pour déchiffrer ce message, on utilise encore cette fonction powm.
